@@ -1,0 +1,140 @@
+@model NoticeBoard_frontend.Models.AnnouncementIndexViewModel
+@{
+    ViewData["Title"] = "Оголошення";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Оголошення</h2>
+    <a asp-action="Create" class="btn btn-primary">+ Створити оголошення</a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" asp-action="Index" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Категорія</label>
+                <select name="category" class="form-select">
+                    <option value="">Усі категорії</option>
+                    @foreach (var cat in Model.Categories)
+                    {
+                        <option value="@cat" selected="@(Model.CategoryFilter == cat ? "selected" : null)">@cat</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Підкатегорія</label>
+                <select name="subCategory" class="form-select">
+                    <option value="">Усі підкатегорії</option>
+                    @foreach (var sub in Model.SubCategories)
+                    {
+                        <option value="@sub" selected="@(Model.SubCategoryFilter == sub ? "selected" : null)">@sub</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100">Застосувати</button>
+            </div>
+            <div class="col-md-2">
+                <a asp-action="Index" class="btn btn-outline-secondary w-100">Скинути</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!Model.Announcements.Any())
+{
+    <div class="text-center text-muted py-5">
+        <p class="fs-5">Оголошень не знайдено.</p>
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+        @foreach (var item in Model.Announcements)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0">@item.Title</h5>
+                            @if (item.Status)
+                            {
+                                <span class="badge bg-success">Активне</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Неактивне</span>
+                            }
+                        </div>
+                        <p class="card-text text-muted">@item.Description</p>
+                        <div class="mt-auto">
+                            <small class="text-muted d-block">
+                                <strong>Категорія:</strong> @item.Category
+                                @if (!string.IsNullOrEmpty(item.SubCategory))
+                                {
+                                    <span> / @item.SubCategory</span>
+                                }
+                            </small>
+                            <small class="text-muted">
+                                <strong>Створено:</strong> @item.CreatedDate.ToString("dd.MM.yyyy")
+                            </small>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent d-flex gap-2">
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary flex-fill">Редагувати</a>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-danger flex-fill"
+                                data-bs-toggle="modal"
+                                data-bs-target="#deleteModal"
+                                data-id="@item.Id"
+                                data-title="@item.Title">
+                            Видалити
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Підтвердити видалення</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Ви впевнені, що хочете видалити <strong id="deleteModalTitle"></strong>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                <form id="deleteForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">Видалити</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const deleteModal = document.getElementById('deleteModal');
+        deleteModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const id = button.getAttribute('data-id');
+            const title = button.getAttribute('data-title');
+            document.getElementById('deleteModalTitle').textContent = title;
+            document.getElementById('deleteForm').action = '/Announcements/Delete/' + id;
+        });
+    </script>
+}
