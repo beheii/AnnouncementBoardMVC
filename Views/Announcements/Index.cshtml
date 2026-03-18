@@ -1,6 +1,8 @@
 @model NoticeBoard_frontend.Models.AnnouncementIndexViewModel
 @{
     ViewData["Title"] = "Оголошення";
+    var categoryOptions = (IEnumerable<NoticeBoard_frontend.Models.CategoryOption>?)ViewBag.CategoryOptions
+        ?? Enumerable.Empty<NoticeBoard_frontend.Models.CategoryOption>();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -18,10 +20,10 @@
 
 <div class="card mb-4">
     <div class="card-body">
-        <form method="get" asp-action="Index" class="row g-3 align-items-end">
+        <form id="filterForm" method="get" asp-action="Index" class="row g-3 align-items-end">
             <div class="col-md-4">
                 <label class="form-label fw-semibold">Категорія</label>
-                <select name="category" class="form-select">
+                <select name="category" id="filterCategory" class="form-select">
                     <option value="">Усі категорії</option>
                     @foreach (var cat in Model.Categories)
                     {
@@ -31,12 +33,8 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label fw-semibold">Підкатегорія</label>
-                <select name="subCategory" class="form-select">
-                    <option value="">Усі підкатегорії</option>
-                    @foreach (var sub in Model.SubCategories)
-                    {
-                        <option value="@sub" selected="@(Model.SubCategoryFilter == sub ? "selected" : null)">@sub</option>
-                    }
+                <select name="subCategory" id="filterSubCategory" class="form-select" disabled>
+                    <option value="">Оберіть категорію</option>
                 </select>
             </div>
             <div class="col-md-2">
@@ -128,13 +126,65 @@ else
 
 @section Scripts {
     <script>
-        const deleteModal = document.getElementById('deleteModal');
-        deleteModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            const id = button.getAttribute('data-id');
-            const title = button.getAttribute('data-title');
-            document.getElementById('deleteModalTitle').textContent = title;
-            document.getElementById('deleteForm').action = '/Announcements/Delete/' + id;
+        var deleteModal = document.getElementById("deleteModal");
+        deleteModal.addEventListener("show.bs.modal", function (event) {
+            var button = event.relatedTarget;
+            var id = button.getAttribute("data-id");
+            var title = button.getAttribute("data-title");
+            document.getElementById("deleteModalTitle").textContent = title;
+            document.getElementById("deleteForm").action = "/Announcements/Delete/" + id;
         });
+    </script>
+    <script>
+        (function () {
+            var options = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(categoryOptions));
+            var catEl = document.getElementById("filterCategory");
+            var subEl = document.getElementById("filterSubCategory");
+            if (!catEl || !subEl) return;
+
+            var savedSub = "@(Model.SubCategoryFilter ?? "")";
+
+            function fillSub() {
+                var catName = catEl.value;
+                var found = null;
+                for (var i = 0; i < options.length; i++) {
+                    if (options[i].Name === catName) { found = options[i]; break; }
+                }
+                var subs = found ? (found.SubCategories || []) : [];
+
+                subEl.innerHTML = "";
+                var ph = document.createElement("option");
+                ph.value = "";
+
+                if (!catName) {
+                    ph.textContent = "Оберіть категорію";
+                    subEl.disabled = true;
+                } else if (subs.length === 0) {
+                    ph.textContent = "Немає підкатегорій";
+                    subEl.disabled = true;
+                } else {
+                    ph.textContent = "Усі підкатегорії";
+                    subEl.disabled = false;
+                }
+                subEl.appendChild(ph);
+
+                for (var j = 0; j < subs.length; j++) {
+                    var opt = document.createElement("option");
+                    opt.value = subs[j];
+                    opt.textContent = subs[j];
+                    if (savedSub && savedSub === subs[j]) opt.selected = true;
+                    subEl.appendChild(opt);
+                }
+
+                savedSub = "";
+            }
+
+            catEl.addEventListener("change", function () {
+                savedSub = "";
+                fillSub();
+            });
+
+            fillSub();
+        })();
     </script>
 }

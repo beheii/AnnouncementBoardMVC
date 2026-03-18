@@ -23,19 +23,25 @@ public class AnnouncementsController(IAnnouncementApiService apiService, IConfig
         if (!string.IsNullOrWhiteSpace(subCategory))
             filtered = filtered.Where(a => a.SubCategory == subCategory);
 
+        var configured = configuration.GetSection("CategoryOptions:Categories").Get<List<CategoryOption>>() ?? [];
+
+        var allCategories = configured.Select(c => c.Name)
+            .Concat(all.Select(a => a.Category))
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct()
+            .Order()
+            .ToList();
+
         var vm = new AnnouncementIndexViewModel
         {
             Announcements = filtered.ToList(),
             CategoryFilter = category,
             SubCategoryFilter = subCategory,
-            Categories = all.Select(a => a.Category).Distinct().Order().ToList(),
-            SubCategories = all
-                .Where(a => a.SubCategory != null)
-                .Select(a => a.SubCategory!)
-                .Distinct()
-                .Order()
-                .ToList()
+            Categories = allCategories,
+            SubCategories = []
         };
+
+        ViewBag.CategoryOptions = configured;
 
         return View(vm);
     }

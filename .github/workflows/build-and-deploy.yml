@@ -1,0 +1,61 @@
+name: AnnouncementBoard backend
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  
+
+env:
+  AZURE_WEBAPP_NAME: announcement-board-frontend
+  DOTNET_VERSION: '10.0.x'
+  PROJECT_FILE: 'NoticeBoard_frontend.csproj'
+  PUBLISH_DIR: './publish'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore ${{ env.PROJECT_FILE }}
+
+    - name: Build
+      run: dotnet build ${{ env.PROJECT_FILE }} --configuration Release --no-restore
+
+    - name: Publish
+      run: dotnet publish ${{ env.PROJECT_FILE }} --configuration Release --no-restore --no-build --output ${{ env.PUBLISH_DIR }}
+   
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: webapp
+        path: ${{ env.PUBLISH_DIR }}
+
+  deploy:
+    name: Deploy to Azure Web App
+    needs: [build] 
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: webapp
+          path: publish
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+          package: publish
