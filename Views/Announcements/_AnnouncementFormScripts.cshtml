@@ -1,0 +1,78 @@
+@{
+    var categoryOptions = (IEnumerable<NoticeBoard_frontend.Models.CategoryOption>?)ViewBag.CategoryOptions
+        ?? Enumerable.Empty<NoticeBoard_frontend.Models.CategoryOption>();
+}
+
+@{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+
+<script>
+    document.querySelectorAll('[maxlength]').forEach(function (el) {
+        var max = parseInt(el.getAttribute('maxlength'), 10);
+        var counter = document.querySelector('.char-count[data-target="' + el.id + '"]');
+
+        function update() {
+            var len = el.value.length;
+            if (counter) counter.textContent = len + ' / ' + max;
+
+            if (len >= max) {
+                el.classList.add('is-invalid');
+                if (counter) counter.classList.add('text-danger');
+            } else {
+                el.classList.remove('is-invalid');
+                if (counter) counter.classList.remove('text-danger');
+            }
+        }
+
+        el.addEventListener('input', update);
+        el.addEventListener('paste', function () { setTimeout(update, 0); });
+        update();
+    });
+</script>
+
+<script>
+    (function () {
+        var options = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(categoryOptions));
+        var catEl = document.getElementById("Category");
+        var subEl = document.getElementById("SubCategory");
+        if (!catEl || !subEl) return;
+
+        function fillSub() {
+            var catName = catEl.value;
+            var keep = subEl.value;
+            var found = null;
+            for (var i = 0; i < options.length; i++) {
+                if (options[i].Name === catName) { found = options[i]; break; }
+            }
+            var subs = found ? (found.SubCategories || []) : [];
+
+            subEl.innerHTML = "";
+            var ph = document.createElement("option");
+            ph.value = "";
+            if (!catName) {
+                ph.textContent = "Спочатку оберіть категорію";
+                subEl.disabled = true;
+            } else if (subs.length === 0) {
+                ph.textContent = "Немає підкатегорій";
+                subEl.disabled = true;
+            } else {
+                ph.textContent = "Оберіть підкатегорію";
+                subEl.disabled = false;
+            }
+            subEl.appendChild(ph);
+
+            for (var j = 0; j < subs.length; j++) {
+                var opt = document.createElement("option");
+                opt.value = subs[j];
+                opt.textContent = subs[j];
+                if (keep && keep === subs[j]) opt.selected = true;
+                subEl.appendChild(opt);
+            }
+        }
+
+        catEl.addEventListener("change", function () {
+            subEl.value = "";
+            fillSub();
+        });
+        fillSub();
+    })();
+</script>
