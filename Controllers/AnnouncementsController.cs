@@ -4,7 +4,7 @@ using NoticeBoard_frontend.Services;
 
 namespace NoticeBoard_frontend.Controllers;
 
-public class AnnouncementsController(IAnnouncementApiService apiService, IConfiguration configuration) : Controller
+public class AnnouncementsController(IAnnouncementApiService apiService) : Controller
 {
     [HttpGet]
     public IActionResult Error()
@@ -16,14 +16,13 @@ public class AnnouncementsController(IAnnouncementApiService apiService, IConfig
     public async Task<IActionResult> Index(string? category, string? subCategory)
     {
         var all = await apiService.GetAllAsync();
+        var configured = await apiService.GetCategoryOptionsAsync();
 
         var filtered = all.AsEnumerable();
         if (!string.IsNullOrWhiteSpace(category))
             filtered = filtered.Where(a => a.Category == category);
         if (!string.IsNullOrWhiteSpace(subCategory))
             filtered = filtered.Where(a => a.SubCategory == subCategory);
-
-        var configured = configuration.GetSection("CategoryOptions:Categories").Get<List<CategoryOption>>() ?? [];
 
         var allCategories = configured.Select(c => c.Name)
             .Concat(all.Select(a => a.Category))
@@ -38,10 +37,8 @@ public class AnnouncementsController(IAnnouncementApiService apiService, IConfig
             CategoryFilter = category,
             SubCategoryFilter = subCategory,
             Categories = allCategories,
-            SubCategories = []
+            CategoryOptions = configured
         };
-
-        ViewBag.CategoryOptions = configured;
 
         return View(vm);
     }
@@ -63,11 +60,11 @@ public class AnnouncementsController(IAnnouncementApiService apiService, IConfig
         var result = await apiService.CreateAsync(model);
         if (result == null)
         {
-            ModelState.AddModelError(string.Empty, "Не вдалося створити оголошення. Спробуйте ще раз.");
+            ModelState.AddModelError(string.Empty, "Failed to create announcement. Please try again.");
             return View(model);
         }
 
-        TempData["SuccessMessage"] = "Оголошення успішно створено.";
+        TempData["SuccessMessage"] = "Announcement created successfully.";
         return RedirectToAction(nameof(Index));
     }
 
@@ -102,11 +99,11 @@ public class AnnouncementsController(IAnnouncementApiService apiService, IConfig
         var success = await apiService.UpdateAsync(id, model);
         if (!success)
         {
-            ModelState.AddModelError(string.Empty, "Не вдалося оновити оголошення. Спробуйте ще раз.");
+            ModelState.AddModelError(string.Empty, "Failed to update announcement. Please try again.");
             return View(model);
         }
 
-        TempData["SuccessMessage"] = "Оголошення успішно оновлено.";
+        TempData["SuccessMessage"] = "Announcement updated successfully.";
         return RedirectToAction(nameof(Index));
     }
 
@@ -114,43 +111,16 @@ public class AnnouncementsController(IAnnouncementApiService apiService, IConfig
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
-        await apiService.DeleteAsync(id);
-        TempData["SuccessMessage"] = "Оголошення успішно видалено.";
+        var success = await apiService.DeleteAsync(id);
+        TempData[success ? "SuccessMessage" : "ErrorMessage"] =
+            success ? "Announcement deleted successfully." : "Failed to delete announcement. Please try again.";
         return RedirectToAction(nameof(Index));
     }
 
     private async Task PopulateCategoryOptionsAsync()
     {
-        var configured = configuration.GetSection("CategoryOptions:Categories").Get<List<CategoryOption>>() ?? [];
-
-        // Merge API-discovered values in case DB contains extra categories/subcategories
-        var all = await apiService.GetAllAsync();
-        var apiGroups = all
-            .Where(a => !string.IsNullOrWhiteSpace(a.Category))
-            .GroupBy(a => a.Category)
-            .Select(g => new CategoryOption
-            {
-                Name = g.Key,
-                SubCategories = g.Where(x => !string.IsNullOrWhiteSpace(x.SubCategory))
-                    .Select(x => x.SubCategory!)
-                    .Distinct()
-                    .Order()
-                    .ToList()
-            })
-            .ToList();
-
-        var merged = configured
-            .Concat(apiGroups)
-            .GroupBy(c => c.Name)
-            .Select(g => new CategoryOption
-            {
-                Name = g.Key,
-                SubCategories = g.SelectMany(x => x.SubCategories).Distinct().Order().ToList()
-            })
-            .OrderBy(c => c.Name)
-            .ToList();
-
-        ViewBag.CategoryOptions = merged;
-        ViewBag.Categories = merged.Select(x => x.Name).ToList();
+        var options = await apiService.GetCategoryOptionsAsync();
+        ViewBag.CategoryOptions = options;
+        ViewBag.Categories = options.Select(x => x.Name).OrderBy(x => x).ToList();
     }
 }

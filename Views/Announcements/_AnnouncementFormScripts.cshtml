@@ -36,9 +36,13 @@
         var subEl = document.getElementById("SubCategory");
         if (!catEl || !subEl) return;
 
+        var isInitialized = false;
+
         function fillSub() {
             var catName = catEl.value;
-            var keep = subEl.value;
+            var keep = isInitialized
+                ? subEl.value
+                : (subEl.getAttribute("data-current-subcategory") || "");
             var found = null;
             for (var i = 0; i < options.length; i++) {
                 if (options[i].Name === catName) { found = options[i]; break; }
@@ -49,13 +53,13 @@
             var ph = document.createElement("option");
             ph.value = "";
             if (!catName) {
-                ph.textContent = "Спочатку оберіть категорію";
+                ph.textContent = "Select category first";
                 subEl.disabled = true;
             } else if (subs.length === 0) {
-                ph.textContent = "Немає підкатегорій";
+                ph.textContent = "No subcategories";
                 subEl.disabled = true;
             } else {
-                ph.textContent = "Оберіть підкатегорію";
+                ph.textContent = "Select subcategory";
                 subEl.disabled = false;
             }
             subEl.appendChild(ph);
@@ -67,6 +71,7 @@
                 if (keep && keep === subs[j]) opt.selected = true;
                 subEl.appendChild(opt);
             }
+            isInitialized = true;
         }
 
         catEl.addEventListener("change", function () {

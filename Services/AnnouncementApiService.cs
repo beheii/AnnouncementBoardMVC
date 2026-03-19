@@ -7,9 +7,29 @@ public class AnnouncementApiService(HttpClient httpClient) : IAnnouncementApiSer
 {
     public async Task<List<AnnouncementViewModel>> GetAllAsync(string? category = null, string? subCategory = null)
     {
-        var query = BuildQuery(category, subCategory);
-        var result = await httpClient.GetFromJsonAsync<List<AnnouncementViewModel>>($"api/announcements{query}");
-        return result ?? [];
+        try
+        {
+            var query = BuildQuery(category, subCategory);
+            var result = await httpClient.GetFromJsonAsync<List<AnnouncementViewModel>>($"api/announcements{query}");
+            return result ?? [];
+        }
+        catch (HttpRequestException)
+        {
+            return [];
+        }
+    }
+
+    public async Task<List<CategoryOption>> GetCategoryOptionsAsync()
+    {
+        try
+        {
+            var result = await httpClient.GetFromJsonAsync<List<CategoryOption>>("api/categories");
+            return result ?? [];
+        }
+        catch (HttpRequestException)
+        {
+            return [];
+        }
     }
 
     public async Task<AnnouncementViewModel?> GetByIdAsync(int id)
@@ -26,21 +46,42 @@ public class AnnouncementApiService(HttpClient httpClient) : IAnnouncementApiSer
 
     public async Task<AnnouncementViewModel?> CreateAsync(CreateAnnouncementViewModel model)
     {
-        var response = await httpClient.PostAsJsonAsync("api/announcements", model);
-        if (!response.IsSuccessStatusCode) return null;
-        return await response.Content.ReadFromJsonAsync<AnnouncementViewModel>();
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync("api/announcements", model);
+            if (!response.IsSuccessStatusCode) return null;
+            return await response.Content.ReadFromJsonAsync<AnnouncementViewModel>();
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
     }
 
     public async Task<bool> UpdateAsync(int id, UpdateAnnouncementViewModel model)
     {
-        var response = await httpClient.PutAsJsonAsync($"api/announcements/{id}", model);
-        return response.IsSuccessStatusCode;
+        try
+        {
+            var response = await httpClient.PutAsJsonAsync($"api/announcements/{id}", model);
+            return response.IsSuccessStatusCode;
+        }
+        catch (HttpRequestException)
+        {
+            return false;
+        }
     }
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var response = await httpClient.DeleteAsync($"api/announcements/{id}");
-        return response.IsSuccessStatusCode;
+        try
+        {
+            var response = await httpClient.DeleteAsync($"api/announcements/{id}");
+            return response.IsSuccessStatusCode;
+        }
+        catch (HttpRequestException)
+        {
+            return false;
+        }
     }
 
     private static string BuildQuery(string? category, string? subCategory)

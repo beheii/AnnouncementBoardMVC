@@ -6,23 +6,23 @@ public abstract class AnnouncementFormViewModelBase
 {
     public int? Id { get; set; }
 
-    [Display(Name = "Заголовок")]
-    [Required(ErrorMessage = "Заголовок є обов'язковим")]
-    [StringLength(100, MinimumLength = 5, ErrorMessage = "Заголовок має містити від 5 до 100 символів")]
+    [Display(Name = "Title")]
+    [Required(ErrorMessage = "Title is required")]
+    [StringLength(100, MinimumLength = 5, ErrorMessage = "Title must be between 5 and 100 characters")]
     public string Title { get; set; } = string.Empty;
 
-    [Display(Name = "Опис")]
-    [Required(ErrorMessage = "Опис є обов'язковим")]
-    [StringLength(1000, MinimumLength = 20, ErrorMessage = "Опис має містити від 20 до 1000 символів")]
+    [Display(Name = "Description")]
+    [Required(ErrorMessage = "Description is required")]
+    [StringLength(1000, MinimumLength = 20, ErrorMessage = "Description must be between 20 and 1000 characters")]
     public string Description { get; set; } = string.Empty;
 
-    [Display(Name = "Категорія")]
-    [Required(ErrorMessage = "Категорія є обов'язковою")]
+    [Display(Name = "Category")]
+    [Required(ErrorMessage = "Category is required")]
     public string Category { get; set; } = string.Empty;
 
-    [Display(Name = "Підкатегорія")]
+    [Display(Name = "Subcategory")]
     public string? SubCategory { get; set; }
 
-    [Display(Name = "Статус")]
+    [Display(Name = "Status")]
     public bool Status { get; set; } = true;
 }

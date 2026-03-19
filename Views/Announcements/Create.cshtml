@@ -1,9 +1,9 @@
 @model NoticeBoard_frontend.Models.CreateAnnouncementViewModel
 @{
-    ViewData["Title"] = "Створити оголошення";
-    ViewData["Heading"] = "Нове оголошення";
+    ViewData["Title"] = "Create Announcement";
+    ViewData["Heading"] = "New Announcement";
     ViewData["FormAction"] = "Create";
-    ViewData["SubmitText"] = "Створити";
+    ViewData["SubmitText"] = "Create";
 }
 
 @await Html.PartialAsync("_AnnouncementForm", Model)
