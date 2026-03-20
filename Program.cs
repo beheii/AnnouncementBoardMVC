@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using NoticeBoard_frontend.Handlers;
+using NoticeBoard_frontend.Models;
 using NoticeBoard_frontend.Services;
 
 namespace NoticeBoard_frontend
@@ -77,6 +78,11 @@ namespace NoticeBoard_frontend
                 client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"]!);
             }).AddHttpMessageHandler<AuthTokenHandler>();
 
+            builder.Services.AddHttpClient<ICategoryApiService, CategoryApiService>(client =>
+            {
+                client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"]!);
+            }).AddHttpMessageHandler<AuthTokenHandler>();
+
             var app = builder.Build();
 
             if (!app.Environment.IsDevelopment())
@@ -101,5 +107,4 @@ namespace NoticeBoard_frontend
         }
     }
 
-    public record UserInfo(int Id, string GoogleSubject, string Email, string? DisplayName);
 }

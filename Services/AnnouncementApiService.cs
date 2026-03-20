@@ -3,7 +3,7 @@ using NoticeBoard_frontend.Models;
 
 namespace NoticeBoard_frontend.Services;
 
-public class AnnouncementApiService(HttpClient httpClient) : IAnnouncementApiService
+public class AnnouncementApiService(HttpClient httpClient, ILogger<AnnouncementApiService> logger) : IAnnouncementApiService
 {
     public async Task<List<AnnouncementViewModel>> GetAllAsync(string? category = null, string? subCategory = null)
     {
@@ -13,21 +13,9 @@ public class AnnouncementApiService(HttpClient httpClient) : IAnnouncementApiSer
             var result = await httpClient.GetFromJsonAsync<List<AnnouncementViewModel>>($"api/announcements{query}");
             return result ?? [];
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
-            return [];
-        }
-    }
-
-    public async Task<List<CategoryOption>> GetCategoryOptionsAsync()
-    {
-        try
-        {
-            var result = await httpClient.GetFromJsonAsync<List<CategoryOption>>("api/categories");
-            return result ?? [];
-        }
-        catch (HttpRequestException)
-        {
+            logger.LogError(ex, "Failed to fetch announcements from API.");
             return [];
         }
     }
@@ -38,8 +26,9 @@ public class AnnouncementApiService(HttpClient httpClient) : IAnnouncementApiSer
         {
             return await httpClient.GetFromJsonAsync<AnnouncementViewModel>($"api/announcements/{id}");
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
+            logger.LogError(ex, "Failed to fetch announcement by id: {Id}", id);
             return null;
         }
     }
@@ -52,8 +41,9 @@ public class AnnouncementApiService(HttpClient httpClient) : IAnnouncementApiSer
             if (!response.IsSuccessStatusCode) return null;
             return await response.Content.ReadFromJsonAsync<AnnouncementViewModel>();
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
+            logger.LogError(ex, "Failed to create announcement.");
             return null;
         }
     }
@@ -65,8 +55,9 @@ public class AnnouncementApiService(HttpClient httpClient) : IAnnouncementApiSer
             var response = await httpClient.PutAsJsonAsync($"api/announcements/{id}", model);
             return response.IsSuccessStatusCode;
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
+            logger.LogError(ex, "Failed to update announcement: {Id}", id);
             return false;
         }
     }
@@ -78,8 +69,9 @@ public class AnnouncementApiService(HttpClient httpClient) : IAnnouncementApiSer
             var response = await httpClient.DeleteAsync($"api/announcements/{id}");
             return response.IsSuccessStatusCode;
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
+            logger.LogError(ex, "Failed to delete announcement: {Id}", id);
             return false;
         }
     }

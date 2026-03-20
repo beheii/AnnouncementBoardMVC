@@ -33,7 +33,7 @@
                 <label class="form-label fw-semibold">Category</label>
                 <select name="category" id="filterCategory" class="form-select">
                     <option value="">All categories</option>
-                    @foreach (var cat in Model.Categories)
+                    @foreach (var cat in Model.CategoryOptions.Select(x => x.Name).OrderBy(x => x))
                     {
                         <option value="@cat" selected="@(Model.CategoryFilter == cat ? "selected" : null)">@cat</option>
                     }

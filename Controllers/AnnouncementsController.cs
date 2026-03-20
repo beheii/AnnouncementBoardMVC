@@ -5,7 +5,10 @@ using NoticeBoard_frontend.Services;
 
 namespace NoticeBoard_frontend.Controllers;
 
-public class AnnouncementsController(IAnnouncementApiService apiService) : Controller
+public class AnnouncementsController(
+    IAnnouncementApiService announcementApiService,
+    ICategoryApiService categoryApiService,
+    ILogger<AnnouncementsController> logger) : Controller
 {
     [HttpGet]
     public IActionResult Error()
@@ -16,38 +19,17 @@ public class AnnouncementsController(IAnnouncementApiService apiService) : Contr
 
     public async Task<IActionResult> Index(string? category, string? subCategory)
     {
-        var all = await apiService.GetAllAsync();
-        var configured = await apiService.GetCategoryOptionsAsync();
-
-        var filtered = all.AsEnumerable();
-        if (!string.IsNullOrWhiteSpace(category))
-            filtered = filtered.Where(a => a.Category == category);
-        if (!string.IsNullOrWhiteSpace(subCategory))
-            filtered = filtered.Where(a => a.SubCategory == subCategory);
-
-        var allCategories = configured.Select(c => c.Name)
-            .Concat(all.Select(a => a.Category))
-            .Where(s => !string.IsNullOrWhiteSpace(s))
-            .Distinct()
-            .Order()
-            .ToList();
-
-        int? currentUserId = null;
-        if (User.Identity?.IsAuthenticated == true)
-        {
-            var claim = User.FindFirst("internal_user_id")?.Value;
-            if (claim != null && int.TryParse(claim, out var uid))
-                currentUserId = uid;
-        }
+        var announcementsTask = announcementApiService.GetAllAsync(category, subCategory);
+        var categoryOptionsTask = categoryApiService.GetCategoryOptionsAsync();
+        await Task.WhenAll(announcementsTask, categoryOptionsTask);
 
         var vm = new AnnouncementIndexViewModel
         {
-            Announcements = filtered.ToList(),
+            Announcements = announcementsTask.Result,
             CategoryFilter = category,
             SubCategoryFilter = subCategory,
-            Categories = allCategories,
-            CategoryOptions = configured,
-            CurrentUserId = currentUserId
+            CategoryOptions = categoryOptionsTask.Result,
+            CurrentUserId = GetCurrentUserId()
         };
 
         return View(vm);
@@ -69,9 +51,10 @@ public class AnnouncementsController(IAnnouncementApiService apiService) : Contr
         await PopulateCategoryOptionsAsync();
         if (!ModelState.IsValid) return View(model);
 
-        var result = await apiService.CreateAsync(model);
+        var result = await announcementApiService.CreateAsync(model);
         if (result == null)
         {
+            logger.LogWarning("Create announcement failed for current user.");
             ModelState.AddModelError(string.Empty, "Failed to create announcement. Please try again.");
             return View(model);
         }
@@ -84,7 +67,7 @@ public class AnnouncementsController(IAnnouncementApiService apiService) : Contr
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
-        var announcement = await apiService.GetByIdAsync(id);
+        var announcement = await announcementApiService.GetByIdAsync(id);
         if (announcement == null) return NotFound();
 
         var currentUserId = GetCurrentUserId();
@@ -114,9 +97,10 @@ public class AnnouncementsController(IAnnouncementApiService apiService) : Contr
         await PopulateCategoryOptionsAsync();
         if (!ModelState.IsValid) return View(model);
 
-        var success = await apiService.UpdateAsync(id, model);
+        var success = await announcementApiService.UpdateAsync(id, model);
         if (!success)
         {
+            logger.LogWarning("Update announcement failed for id {AnnouncementId}.", id);
             ModelState.AddModelError(string.Empty, "Failed to update announcement. Please try again.");
             return View(model);
         }
@@ -130,7 +114,20 @@ public class AnnouncementsController(IAnnouncementApiService apiService) : Contr
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
-        var success = await apiService.DeleteAsync(id);
+        var announcement = await announcementApiService.GetByIdAsync(id);
+        if (announcement == null)
+        {
+            TempData["ErrorMessage"] = "Announcement not found.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var currentUserId = GetCurrentUserId();
+        if (currentUserId == null || announcement.UserId != currentUserId)
+        {
+            return Forbid();
+        }
+
+        var success = await announcementApiService.DeleteAsync(id);
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
             success ? "Announcement deleted successfully." : "Failed to delete announcement. Please try again.";
         return RedirectToAction(nameof(Index));
@@ -144,7 +141,7 @@ public class AnnouncementsController(IAnnouncementApiService apiService) : Contr
 
     private async Task PopulateCategoryOptionsAsync()
     {
-        var options = await apiService.GetCategoryOptionsAsync();
+        var options = await categoryApiService.GetCategoryOptionsAsync();
         ViewBag.CategoryOptions = options;
         ViewBag.Categories = options.Select(x => x.Name).OrderBy(x => x).ToList();
     }
