@@ -5,7 +5,10 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">Announcements</h2>
-    <a asp-action="Create" class="btn btn-primary">+ Create announcement</a>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <a asp-action="Create" class="btn btn-primary">+ Create announcement</a>
+    }
 </div>
 
 @if (TempData["SuccessMessage"] != null)
@@ -64,7 +67,17 @@ else
         @foreach (var item in Model.Announcements)
         {
             <div class="col">
-                <div class="card h-100 shadow-sm">
+                <div class="card h-100 shadow-sm announcement-card"
+                     role="button"
+                     tabindex="0"
+                     data-id="@item.Id"
+                     data-title="@item.Title"
+                     data-description="@item.Description"
+                     data-status="@(item.Status ? "Active" : "Inactive")"
+                     data-category="@item.Category"
+                     data-subcategory="@(item.SubCategory ?? "")"
+                     data-created="@item.CreatedDate.ToString("dd.MM.yyyy")"
+                     data-updated="@(item.UpdatedDate?.ToString("dd.MM.yyyy") ?? "")">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <h5 class="card-title mb-0">@item.Title</h5>
@@ -97,22 +110,46 @@ else
                             }
                         </div>
                     </div>
-                    <div class="card-footer bg-transparent d-flex gap-2">
-                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary flex-fill">Edit</a>
-                        <button type="button"
-                                class="btn btn-sm btn-outline-danger flex-fill"
-                                data-bs-toggle="modal"
-                                data-bs-target="#deleteModal"
-                                data-id="@item.Id"
-                                data-title="@item.Title">
-                            Delete
-                        </button>
-                    </div>
+                    @if (User.Identity?.IsAuthenticated == true && item.UserId == Model.CurrentUserId)
+                    {
+                        <div class="card-footer bg-transparent d-flex gap-2">
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary flex-fill">Edit</a>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-danger flex-fill"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#deleteModal"
+                                    data-id="@item.Id"
+                                    data-title="@item.Title">
+                                Delete
+                            </button>
+                        </div>
+                    }
                 </div>
             </div>
         }
     </div>
 }
+
+<div class="modal fade" id="announcementDetailsModal" tabindex="-1" aria-labelledby="announcementDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="announcementDetailsModalLabel">Announcement details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h4 id="detailsTitle" class="mb-3"></h4>
+                <p id="detailsDescription" class="mb-3"></p>
+                <div class="small text-muted">
+                    <div><strong>Status:</strong> <span id="detailsStatus"></span></div>
+                    <div><strong>Category:</strong> <span id="detailsCategory"></span></div>
+                    <div><strong>Created:</strong> <span id="detailsCreated"></span></div>
+                    <div id="detailsUpdatedRow" class="d-none"><strong>Updated:</strong> <span id="detailsUpdated"></span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -136,6 +173,51 @@ else
 </div>
 
 @section Scripts {
+    <script>
+        (function () {
+            var detailsModalEl = document.getElementById("announcementDetailsModal");
+            var detailsModal = new bootstrap.Modal(detailsModalEl);
+            var cards = document.querySelectorAll(".announcement-card");
+
+            function openDetails(card) {
+                var category = card.getAttribute("data-category");
+                var subCategory = card.getAttribute("data-subcategory");
+                var categoryText = category + (subCategory ? " / " + subCategory : "");
+
+                document.getElementById("detailsTitle").textContent = card.getAttribute("data-title");
+                document.getElementById("detailsDescription").textContent = card.getAttribute("data-description");
+                document.getElementById("detailsStatus").textContent = card.getAttribute("data-status");
+                document.getElementById("detailsCategory").textContent = categoryText;
+                document.getElementById("detailsCreated").textContent = card.getAttribute("data-created");
+
+                var updated = card.getAttribute("data-updated");
+                var updatedRow = document.getElementById("detailsUpdatedRow");
+                if (updated) {
+                    document.getElementById("detailsUpdated").textContent = updated;
+                    updatedRow.classList.remove("d-none");
+                } else {
+                    document.getElementById("detailsUpdated").textContent = "";
+                    updatedRow.classList.add("d-none");
+                }
+
+                detailsModal.show();
+            }
+
+            cards.forEach(function (card) {
+                card.addEventListener("click", function (event) {
+                    if (event.target.closest("a, button, form")) return;
+                    openDetails(card);
+                });
+
+                card.addEventListener("keydown", function (event) {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        openDetails(card);
+                    }
+                });
+            });
+        })();
+    </script>
     <script>
         var deleteModal = document.getElementById("deleteModal");
         deleteModal.addEventListener("show.bs.modal", function (event) {

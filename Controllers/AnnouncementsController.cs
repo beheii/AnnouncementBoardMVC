@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NoticeBoard_frontend.Models;
 using NoticeBoard_frontend.Services;
@@ -31,18 +32,28 @@ public class AnnouncementsController(IAnnouncementApiService apiService) : Contr
             .Order()
             .ToList();
 
+        int? currentUserId = null;
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            var claim = User.FindFirst("internal_user_id")?.Value;
+            if (claim != null && int.TryParse(claim, out var uid))
+                currentUserId = uid;
+        }
+
         var vm = new AnnouncementIndexViewModel
         {
             Announcements = filtered.ToList(),
             CategoryFilter = category,
             SubCategoryFilter = subCategory,
             Categories = allCategories,
-            CategoryOptions = configured
+            CategoryOptions = configured,
+            CurrentUserId = currentUserId
         };
 
         return View(vm);
     }
 
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> Create()
     {
@@ -50,6 +61,7 @@ public class AnnouncementsController(IAnnouncementApiService apiService) : Contr
         return View(new CreateAnnouncementViewModel());
     }
 
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(CreateAnnouncementViewModel model)
@@ -68,11 +80,16 @@ public class AnnouncementsController(IAnnouncementApiService apiService) : Contr
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
         var announcement = await apiService.GetByIdAsync(id);
         if (announcement == null) return NotFound();
+
+        var currentUserId = GetCurrentUserId();
+        if (currentUserId == null || announcement.UserId != currentUserId)
+            return Forbid();
 
         await PopulateCategoryOptionsAsync();
 
@@ -89,6 +106,7 @@ public class AnnouncementsController(IAnnouncementApiService apiService) : Contr
         return View(vm);
     }
 
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, UpdateAnnouncementViewModel model)
@@ -107,6 +125,7 @@ public class AnnouncementsController(IAnnouncementApiService apiService) : Contr
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
@@ -115,6 +134,12 @@ public class AnnouncementsController(IAnnouncementApiService apiService) : Contr
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
             success ? "Announcement deleted successfully." : "Failed to delete announcement. Please try again.";
         return RedirectToAction(nameof(Index));
+    }
+
+    private int? GetCurrentUserId()
+    {
+        var claim = User.FindFirst("internal_user_id")?.Value;
+        return claim != null && int.TryParse(claim, out var uid) ? uid : null;
     }
 
     private async Task PopulateCategoryOptionsAsync()

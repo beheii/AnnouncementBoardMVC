@@ -13,6 +13,17 @@
         <nav class="navbar navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container-fluid">
                 <a class="navbar-brand" asp-controller="Announcements" asp-action="Index">Announcement Board</a>
+                <div class="d-flex align-items-center">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <span class="navbar-text me-3">@User.Identity.Name</span>
+                        <a asp-controller="Account" asp-action="Logout" class="btn btn-outline-secondary btn-sm">Logout</a>
+                    }
+                    else
+                    {
+                        <a asp-controller="Account" asp-action="Login" class="btn btn-outline-primary btn-sm">Login with Google</a>
+                    }
+                </div>
             </div>
         </nav>
     </header>

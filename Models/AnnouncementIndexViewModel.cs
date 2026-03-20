@@ -7,4 +7,5 @@ public class AnnouncementIndexViewModel
     public string? SubCategoryFilter { get; set; }
     public List<string> Categories { get; set; } = [];
     public List<CategoryOption> CategoryOptions { get; set; } = [];
+    public int? CurrentUserId { get; set; }
 }

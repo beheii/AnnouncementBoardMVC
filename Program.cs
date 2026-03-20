@@ -1,3 +1,9 @@
+using System.Net.Http.Headers;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
+using NoticeBoard_frontend.Handlers;
 using NoticeBoard_frontend.Services;
 
 namespace NoticeBoard_frontend
@@ -10,24 +16,79 @@ namespace NoticeBoard_frontend
 
             builder.Services.AddControllersWithViews();
 
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+            })
+            .AddCookie()
+            .AddGoogle(options =>
+            {
+                options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
+                options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
+                options.SaveTokens = true;
+
+                options.Events.OnCreatingTicket = async context =>
+                {
+                    string? idToken = null;
+                    if (context.TokenResponse?.Response != null &&
+                        context.TokenResponse.Response.RootElement.TryGetProperty("id_token", out var tokenEl))
+                    {
+                        idToken = tokenEl.GetString();
+                    }
+
+                    if (string.IsNullOrEmpty(idToken)) return;
+                    context.Properties.StoreTokens(
+                    [
+                        new AuthenticationToken
+                        {
+                            Name = "id_token",
+                            Value = idToken
+                        }
+                    ]);
+
+                    var config = context.HttpContext.RequestServices.GetRequiredService<IConfiguration>();
+                    var baseUrl = config["ApiSettings:BaseUrl"];
+                    if (string.IsNullOrEmpty(baseUrl)) return;
+
+                    try
+                    {
+                        using var http = new HttpClient { BaseAddress = new Uri(baseUrl) };
+                        http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", idToken);
+
+                        var user = await http.GetFromJsonAsync<UserInfo>("api/users/me");
+                        if (user != null)
+                        {
+                            context.Identity?.AddClaim(new Claim("internal_user_id", user.Id.ToString()));
+                        }
+                    }
+                    catch
+                    {
+                        // API unavailable during login — user can still authenticate
+                    }
+                };
+            });
+
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddTransient<AuthTokenHandler>();
+
             builder.Services.AddHttpClient<IAnnouncementApiService, AnnouncementApiService>(client =>
             {
                 client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"]!);
-            });
+            }).AddHttpMessageHandler<AuthTokenHandler>();
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Announcements/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
 
             app.UseHttpsRedirection();
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapStaticAssets();
@@ -39,4 +100,6 @@ namespace NoticeBoard_frontend
             app.Run();
         }
     }
+
+    public record UserInfo(int Id, string GoogleSubject, string Email, string? DisplayName);
 }
