@@ -1,6 +1,6 @@
-using NoticeBoard_frontend.Models;
+using NoticeBoard_frontend.ApiModels;
 
-namespace NoticeBoard_frontend.Services;
+namespace NoticeBoard_frontend.Abstractions;
 
 public interface ICategoryApiService
 {

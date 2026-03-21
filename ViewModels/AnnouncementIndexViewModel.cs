@@ -1,4 +1,6 @@
-namespace NoticeBoard_frontend.Models;
+using NoticeBoard_frontend.ApiModels;
+
+namespace NoticeBoard_frontend.ViewModels;
 
 public class AnnouncementIndexViewModel
 {

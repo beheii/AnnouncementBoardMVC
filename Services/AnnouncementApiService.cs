@@ -1,5 +1,7 @@
 using System.Net.Http.Json;
-using NoticeBoard_frontend.Models;
+using NoticeBoard_frontend.Abstractions;
+using NoticeBoard_frontend.ApiModels;
+using NoticeBoard_frontend.ViewModels;
 
 namespace NoticeBoard_frontend.Services;
 

@@ -1,4 +1,4 @@
-@model NoticeBoard_frontend.Models.AnnouncementFormViewModelBase
+@model NoticeBoard_frontend.ViewModels.AnnouncementFormViewModelBase
 @{
     var categories = (IEnumerable<string>?)ViewBag.Categories ?? Enumerable.Empty<string>();
     var heading = (string?)ViewData["Heading"] ?? "Announcements";

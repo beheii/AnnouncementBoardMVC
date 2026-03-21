@@ -1,6 +1,7 @@
-using NoticeBoard_frontend.Models;
+using NoticeBoard_frontend.ApiModels;
+using NoticeBoard_frontend.ViewModels;
 
-namespace NoticeBoard_frontend.Services;
+namespace NoticeBoard_frontend.Abstractions;
 
 public interface IAnnouncementApiService
 {

@@ -3,8 +3,9 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
+using NoticeBoard_frontend.Abstractions;
+using NoticeBoard_frontend.ApiModels;
 using NoticeBoard_frontend.Handlers;
-using NoticeBoard_frontend.Models;
 using NoticeBoard_frontend.Services;
 
 namespace NoticeBoard_frontend

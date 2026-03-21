@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using NoticeBoard_frontend.Models;
+using NoticeBoard_frontend.Abstractions;
 using NoticeBoard_frontend.Services;
+using NoticeBoard_frontend.ViewModels;
 
 namespace NoticeBoard_frontend.Controllers;
 

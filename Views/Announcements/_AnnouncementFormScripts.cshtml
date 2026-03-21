@@ -1,6 +1,6 @@
 @{
-    var categoryOptions = (IEnumerable<NoticeBoard_frontend.Models.CategoryOption>?)ViewBag.CategoryOptions
-        ?? Enumerable.Empty<NoticeBoard_frontend.Models.CategoryOption>();
+    var categoryOptions = (IEnumerable<NoticeBoard_frontend.ApiModels.CategoryOption>?)ViewBag.CategoryOptions
+        ?? Enumerable.Empty<NoticeBoard_frontend.ApiModels.CategoryOption>();
 }
 
 @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }

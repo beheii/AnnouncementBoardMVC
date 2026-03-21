@@ -2,6 +2,8 @@
 
 An ASP.NET Core MVC web application for the Announcement board project. It provides the user interface for browsing, filtering, and managing announcements. All data is loaded from and saved through a separate [ASP.NET Core API backend](https://announcement-board-b4cndjerc6bsawf9.polandcentral-01.azurewebsites.net/swagger/index.html) (Swagger UI).
 
+The frontend application provides a user interface for interacting with the Announcement Board system, supporting full CRUD operations. Users can create, view, update, and delete announcements through a structured and user-friendly interface. Each announcement includes a title, description, creation date, and status (active or inactive).
+
 Beyond the requirements defined in the technical specification, several enhancements were implemented to improve the overall structure, performance, and maintainability of the application:
 
 ## Database Structure & Optimization

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace NoticeBoard_frontend.Models;
+namespace NoticeBoard_frontend.ViewModels;
 
 public abstract class AnnouncementFormViewModelBase
 {

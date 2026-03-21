@@ -1,4 +1,4 @@
-namespace NoticeBoard_frontend.Models;
+namespace NoticeBoard_frontend.ApiModels;
 
 public class AnnouncementViewModel
 {
